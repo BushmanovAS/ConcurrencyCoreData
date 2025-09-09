@@ -15,8 +15,10 @@ final class CoreDataStack {
     
     private let persistentContainer: NSPersistentContainer
     
-    /// Общий background-контекст на все приложение. По задумке нужен для наблюдателя за БД
-    /// и для мержа разных контекстов, если они будут изменять одну таблицу
+    // COMMENT: - Общий background-контекст на все приложение. По задумке нужен для наблюдателя за БД
+    // и для мержа разных контекстов, если они будут изменять одну таблицу. То есть мы работаем напрямую
+    // только с дочерними контекстами. Main контекста нет и не будет, так как мы не тащим данные из БД
+    // напрямую на экран
     private let backgroundContext: NSManagedObjectContext
     
     private init() {
@@ -26,6 +28,7 @@ final class CoreDataStack {
                 fatalError("Core Data store failed to load: \(error)")
             }
             
+            // COMMENT: - Путь до sql таблицы, если захочется поглядеть что в ней происходит
             print("✅ CoreData loaded: \(description.url?.absoluteString ?? "")")
         }
         
@@ -36,8 +39,8 @@ final class CoreDataStack {
     
     // MARK: - Методы
     
-    /// Создает новый дочерний контекст для CRUD операций. Создается 1 штука на сервис
-    func newCRUDContext() -> NSManagedObjectContext {        
+    // COMMENT: - Создает новый дочерний контекст для CRUD операций. Создается 1 штука на сервис
+    func newCRUDContext() -> NSManagedObjectContext {
         let childContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         childContext.parent = backgroundContext
         childContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -46,7 +49,7 @@ final class CoreDataStack {
         return childContext
     }
     
-    /// Создает новый контекст для операций чтения
+    // COMMENT: - Создает новый контекст для операций чтения
     func newReadContext() -> NSManagedObjectContext {
         let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         context.persistentStoreCoordinator = persistentContainer.persistentStoreCoordinator
@@ -62,11 +65,11 @@ final class CoreDataStack {
             do {
                 try context.save()
                 
+                // COMMENT: - так как появились дочерние контексты, то надо сохранять и родительский
                 if let parent = context.parent {
                     self.saveContext(parent)
                 }
             } catch {
-                
                 print("💩💩💩")
             }
         }

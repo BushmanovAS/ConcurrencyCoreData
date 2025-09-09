@@ -19,6 +19,8 @@ protocol ICoreDataManager {
         propertiesToFetch: [String]?,
         returnsObjectsAsFaults: Bool,
         shouldRefreshRefetchedObjects: Bool,
+        // COMMENT: - Маппер теперь передается напрмую в функцию, в итоге объекты БД
+        // не утекают через escaping наружу из контекста
         mapper: some IDataBaseMapper<Domain, Entity>
     ) async throws -> [Domain]
     

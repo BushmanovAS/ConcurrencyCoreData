@@ -121,6 +121,7 @@ final class CoreDataManager: ICoreDataManager {
         }
     }
     
+    // COMMENT: - не тестил эту штуку, развлекайтесь)
     func updateFields<Entity: NSManagedObject>(
         entityType: Entity.Type,
         context: NSManagedObjectContext,
@@ -145,7 +146,10 @@ final class CoreDataManager: ICoreDataManager {
         domain: Domain,
         updateStrategy: UpdateStrategy
     ) async throws {
+        // COMMENT: - performAndWait превратился в нормальный perform и теперь работает асинхроно
         try await context.perform {
+            // COMMENT: - fetchRequest не создает еще одно preform замыкания, и для исключения
+            // всяких приколов создается внутри блока perform
             let request = self.makeFetchRequest(
                 entity: entity,
                 predicate: predicate,
@@ -195,7 +199,10 @@ private extension CoreDataManager {
         if let sortDescriptors { fetchRequest.sortDescriptors = sortDescriptors }
         if let propertiesToFetch { fetchRequest.propertiesToFetch = propertiesToFetch }
         
+        // COMMENT: - оказывается fault объекты можно тупо отключить 🤷‍♂️
         fetchRequest.returnsObjectsAsFaults = returnsObjectsAsFaults
+        // COMMENT: - позволяет реактивно, прямо во время запроса подтягивать изменения из общего
+        // контекста, если они там появлись. Отключил от греха подальше :D
         fetchRequest.shouldRefreshRefetchedObjects = shouldRefreshRefetchedObjects
         
         return fetchRequest
