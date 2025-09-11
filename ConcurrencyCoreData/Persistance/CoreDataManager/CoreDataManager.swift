@@ -96,7 +96,13 @@ final class CoreDataManager: ICoreDataManager {
             
             _ = try mapper.toEntities(from: domains, context: context)
             
-            self.stack.saveContext(context)
+            if context.hasChanges {
+                try context.save()
+                
+                if let parent = context.parent {
+                    try parent.save()
+                }
+            }
         }
     }
     
@@ -117,7 +123,13 @@ final class CoreDataManager: ICoreDataManager {
                 context.delete(entity)
             }
             
-            self.stack.saveContext(context)
+            if context.hasChanges {
+                try context.save()
+                
+                if let parent = context.parent {
+                    try parent.save()
+                }
+            }
         }
     }
     
@@ -175,7 +187,13 @@ final class CoreDataManager: ICoreDataManager {
                 }
             }
             
-            self.self.stack.saveContext(context)
+            if context.hasChanges {
+                try context.save()
+                
+                if let parent = context.parent {
+                    try parent.save()
+                }
+            }
         }
     }
 }

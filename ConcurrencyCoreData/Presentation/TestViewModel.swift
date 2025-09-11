@@ -27,7 +27,7 @@ final class TestViewModel: ObservableObject {
         do {
             let countriesFromWeb = try await networkService.getData1()
             try await dataBase.saveCountries(countriesFromWeb)
-            var countriesFromDB = try await dataBase.getCountries()
+            let countriesFromDB = try await dataBase.getCountries()
             let sortedCountries = sortCountries(countriesFromDB)
             self.countries = sortedCountries
         } catch {
@@ -59,7 +59,7 @@ final class TestViewModel: ObservableObject {
             try await dataBase.deleteAllCountries()
             let countriesFromWeb = try await networkService.getData2()
             try await dataBase.saveCountries(countriesFromWeb)
-            var countriesFromDB = try await dataBase.getCountries()
+            let countriesFromDB = try await dataBase.getCountries()
             let sortedCountries = sortCountries(countriesFromDB)
             self.countries = sortedCountries
         } catch {

@@ -57,21 +57,4 @@ final class CoreDataStack {
         context.automaticallyMergesChangesFromParent = true
         return context
     }
-    
-    func saveContext(_ context: NSManagedObjectContext) {
-        context.perform {
-            guard context.hasChanges else { return }
-            
-            do {
-                try context.save()
-                
-                // COMMENT: - так как появились дочерние контексты, то надо сохранять и родительский
-                if let parent = context.parent {
-                    self.saveContext(parent)
-                }
-            } catch {
-                print("💩💩💩")
-            }
-        }
-    }
 }
