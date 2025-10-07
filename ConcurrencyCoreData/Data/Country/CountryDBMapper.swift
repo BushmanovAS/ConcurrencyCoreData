@@ -35,23 +35,21 @@ final class CountryDBMapper: IDataBaseMapper {
         return entities.compactMap { toDomain(from: $0) }
     }
     
-    func toEntity(from domain: Country, context: NSManagedObjectContext) throws -> CountryEntity {
+    func toEntity(from domain: Country, context: NSManagedObjectContext) -> CountryEntity {
         let entity = CountryEntity(context: context)
         entity.id = domain.id
         entity.name = domain.name
         entity.population = Int64(domain.population)
         
         let cityMapper = CityDBMapper()
-        let cityEntities = try domain.cities.map { city in
-            try cityMapper.toEntity(from: city, context: context)
-        }
+        let cityEntities = domain.cities.map { cityMapper.toEntity(from: $0, context: context) }
         
         entity.addToCities(NSSet(array: cityEntities))
         
         return entity
     }
     
-    func toEntities(from domains: [Country], context: NSManagedObjectContext) throws -> [CountryEntity] {
-        return try domains.map { try toEntity(from: $0, context: context) }
+    func toEntities(from domains: [Country], context: NSManagedObjectContext) -> [CountryEntity] {
+        return domains.map { toEntity(from: $0, context: context) }
     }
 }

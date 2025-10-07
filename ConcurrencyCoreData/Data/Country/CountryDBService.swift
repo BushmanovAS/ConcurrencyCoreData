@@ -14,55 +14,50 @@ protocol ICountryDBService {
     func deleteAllCountries() async throws
 }
 
-// COMMENT: - ДБ сервисы стали акторами, это позволяет разруливать очередность доступа в пределах одного контекста
 actor CountryDBService: ICountryDBService {
     
-    // COMMENT: - У каждого ДБ сервиса появился свой приватный контекст, для CRUD операций,
-    // для операций чтения каждый раз создается новый контекст
-    private let writeContext: NSManagedObjectContext
+    private let context: NSManagedObjectContext
     private let manager: ICoreDataManager
+    private let countryMapper: any IDataBaseMapper<Country, CountryEntity> = CountryDBMapper()
     
     init(
-        stack: CoreDataStack = .shared,
         manager: ICoreDataManager = CoreDataManager.shared
     ) {
-        self.writeContext = stack.newCRUDContext()
         self.manager = manager
+        context = manager.newContext()
     }
     
     func saveCountries(_ country: [Country]) async throws {
-        try await manager
-            .save(
-                entity: CountryEntity.self,
-                context: writeContext,
-                domains: country,
-                // COMMENT: - мапперы так же создаются при каждом вызове, с одной стороны
-                // выглядит не очень, с другой стороны убирает все приколы с этим связанные.
-                // Такой маппер как тут, можно смело выносить в переменную, так как он не
-                // содежит сложной логики и не хранит состояния
-                mapper: CountryDBMapper()
-            )
+        try await context.perform { [self] in
+            _ = countryMapper.toEntities(from: country, context: context)
+            try manager.saveChanges(context)
+        }
     }
     
     func getCountries() async throws -> [Country] {
-        try await manager
-            .fetch(
-                entity: CountryEntity.self,
-                // COMMENT: - несмотря на то, что выше я написал, что для чтения создается новый контекст, здесь
-                // я использую тот же изолированный, так как если дернуть save, а потом сразу fetch, данные в
-                // контекстах не успевают помержиться. Это проверяется через Task.sleep. Варианты: сделать все операции
-                // через один контекст, как тут, либо же при save не ходить в БД, а брать то что сейвили. Это актуально
-                // только для этого тестового апа, так как в обычной ситуации обычно нет смысла дергать save, а потом сразу fetch
-                context: writeContext,
-                // COMMENT: - вот эта штука вроде как гораздо выгоднее, чем обычная сортировка, но при этом мы не можем прокинуть
-                // ее на "детей", что печально, но что поделать)
-                sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)],
-                returnsObjectsAsFaults: false,
-                mapper: CountryDBMapper()
-            )
+        try await context.perform { [self] in
+            let entities = try manager
+                .fetchMany(
+                    entity: CountryEntity.self,
+                    context: context,
+                    predicate: nil,
+                    sortDescriptors: [NSSortDescriptor(key: "name", ascending: true)]
+                )
+            
+            return countryMapper.toDomains(from: entities)
+        }
     }
     
     func deleteAllCountries() async throws {
-        try await manager.delete(entity: CountryEntity.self, context: writeContext, predicate: nil)
+        try await context.perform { [self] in
+            try manager
+                .delete(
+                    entity: CountryEntity.self,
+                    context: context,
+                    predicate: nil
+                )
+            
+            try manager.saveChanges(context)
+        }
     }
 }

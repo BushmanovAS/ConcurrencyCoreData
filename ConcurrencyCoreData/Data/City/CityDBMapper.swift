@@ -35,23 +35,22 @@ final class CityDBMapper: IDataBaseMapper {
         return entities.compactMap { toDomain(from: $0) }
     }
     
-    func toEntity(from domain: City, context: NSManagedObjectContext) throws -> CityEntity {
+    func toEntity(from domain: City, context: NSManagedObjectContext) -> CityEntity {
         let entity = CityEntity(context: context)
         entity.id = domain.id
         entity.name = domain.name
         entity.population = Int64(domain.population)
         
         let streetMapper = StreetDBMapper()
-        let streetEntities = try domain.streets.map { street in
-            try streetMapper.toEntity(from: street, context: context)
-        }
+        
+        let streetEntities = domain.streets.map { streetMapper.toEntity(from: $0, context: context) }
         
         entity.addToStreets(NSSet(array: streetEntities))
         
         return entity
     }
     
-    func toEntities(from domains: [City], context: NSManagedObjectContext) throws -> [CityEntity] {
-        return try domains.map { try toEntity(from: $0, context: context) }
+    func toEntities(from domains: [City], context: NSManagedObjectContext) -> [CityEntity] {
+        return domains.map { toEntity(from: $0, context: context) }
     }
 }

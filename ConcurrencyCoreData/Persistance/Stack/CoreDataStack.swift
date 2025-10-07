@@ -8,48 +8,44 @@
 import Foundation
 import CoreData
 
-final class CoreDataStack {
-    // MARK: - Core Data Stack
+final class CoreDataStack: ICoreDataStack {
+    // MARK: - Properties
     
     public static let shared = CoreDataStack()
-    
+
     private let persistentContainer: NSPersistentContainer
-    
-    // COMMENT: - Общий background-контекст на все приложение. По задумке нужен для наблюдателя за БД
-    // и для мержа разных контекстов, если они будут изменять одну таблицу. То есть мы работаем напрямую
-    // только с дочерними контекстами. Main контекста нет и не будет, так как мы не тащим данные из БД
-    // напрямую на экран
-    private let backgroundContext: NSManagedObjectContext
-    
+    private var backgroundContext: NSManagedObjectContext?
+
+    // MARK: - Init
+
     private init() {
         persistentContainer = NSPersistentContainer(name: "ConcurrencyCoreData")
-        persistentContainer.loadPersistentStores { description, error in
-            if let error = error {
-                fatalError("Core Data store failed to load: \(error)")
+        persistentContainer.loadPersistentStores { _, error in
+            if let loadError = error {
+                do {
+                    try self.clearDatabase(in: self.persistentContainer)
+                } catch {
+                    fatalError("Core Data store failed to load: \(loadError)")
+                }
             }
-            
-            // COMMENT: - Путь до sql таблицы, если захочется поглядеть что в ней происходит
-            print("✅ CoreData loaded: \(description.url?.absoluteString ?? "")")
+
+            let context = self.persistentContainer.newBackgroundContext()
+            context.automaticallyMergesChangesFromParent = true
+            context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
+            self.backgroundContext = context
         }
-        
-        backgroundContext = persistentContainer.newBackgroundContext()
-        backgroundContext.automaticallyMergesChangesFromParent = true
-        backgroundContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
-    
-    // MARK: - Методы
-    
-    // COMMENT: - Создает новый дочерний контекст для CRUD операций. Создается 1 штука на сервис
+
     func newCRUDContext() -> NSManagedObjectContext {
         let childContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         childContext.parent = backgroundContext
         childContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         childContext.automaticallyMergesChangesFromParent = true
-        
+
         return childContext
     }
-    
-    // COMMENT: - Создает новый контекст для операций чтения
+
     func newReadContext() -> NSManagedObjectContext {
         let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         context.persistentStoreCoordinator = persistentContainer.persistentStoreCoordinator
@@ -58,3 +54,20 @@ final class CoreDataStack {
         return context
     }
 }
+
+private extension CoreDataStack {
+    func clearDatabase(in container: NSPersistentContainer) throws {
+        guard let url = container.persistentStoreDescriptions.first?.url else { return }
+
+        let persistentStoreCoordinator = container.persistentStoreCoordinator
+
+        try persistentStoreCoordinator.destroyPersistentStore(at: url, ofType: NSSQLiteStoreType, options: nil)
+        try persistentStoreCoordinator.addPersistentStore(
+            ofType: NSSQLiteStoreType,
+            configurationName: nil,
+            at: url,
+            options: nil
+        )
+    }
+}
+

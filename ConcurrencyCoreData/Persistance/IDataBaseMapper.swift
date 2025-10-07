@@ -11,12 +11,12 @@ import CoreData
 protocol IDataBaseMapper<Domain, Entity> {
     associatedtype Domain
     associatedtype Entity: NSManagedObject
-    
+
     func toDomain(from entity: Entity?) -> Domain?
     func toDomains(from entities: [Entity]) -> [Domain]
-    
+
     @discardableResult
-    func toEntity(from domain: Domain, context: NSManagedObjectContext) throws -> Entity
+    func toEntity(from domain: Domain, context: NSManagedObjectContext) -> Entity
     @discardableResult
-    func toEntities(from domains: [Domain], context: NSManagedObjectContext) throws -> [Entity]
+    func toEntities(from domains: [Domain], context: NSManagedObjectContext) -> [Entity]
 }
