@@ -26,7 +26,13 @@ final class CoreDataManager: ICoreDataManager {
 
         try context.save()
 
-        if let parent = context.parent {
+        guard let parent = context.parent,
+              parent.hasChanges
+        else {
+            return
+        }
+
+        try parent.performAndWait {
             try parent.save()
         }
     }
