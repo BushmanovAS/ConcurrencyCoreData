@@ -12,6 +12,7 @@ protocol ICountryDBService {
     func saveCountries(_ country: [Country]) async throws
     func getCountries() async throws -> [Country]
     func deleteAllCountries() async throws
+    func updateCountryName() async throws
 }
 
 actor CountryDBService: ICountryDBService {
@@ -58,6 +59,39 @@ actor CountryDBService: ICountryDBService {
                 )
             
             try manager.saveChanges(context)
+        }
+    }
+    
+    func updateCountryName() async throws {
+        try await context.perform { [self] in
+            try manager
+                .updateField(
+                    entity: CountryEntity.self,
+                    context: context,
+                    predicate: nil,
+                    keyPath: \.name,
+                    value: "(.)(.)"
+                )
+        }
+    }
+    
+    func updateCountryName<Value>(
+        keyPath: ReferenceWritableKeyPath<Country, Value>,
+        value: Value
+    ) async throws {
+        
+        // тут придется маппить ключи
+        // а тут придеся мапить значния
+        
+        try await context.perform { [self] in
+            try manager
+                .updateField(
+                    entity: CountryEntity.self,
+                    context: context,
+                    predicate: nil,
+                    keyPath: keyPath,
+                    value: value
+                )
         }
     }
 }

@@ -89,6 +89,25 @@ final class CoreDataManager: ICoreDataManager {
             context.delete(entity)
         }
     }
+    
+    func updateField<Entity: NSManagedObject, Value>(
+        entity: Entity.Type,
+        context: NSManagedObjectContext,
+        predicate: NSPredicate?,
+        keyPath: ReferenceWritableKeyPath<Entity, Value>,
+        value: Value
+    ) throws {
+        let fetchRequest = makeFetchRequest(
+            entity: entity,
+            predicate: predicate
+        )
+        
+        let entities = try context.fetch(fetchRequest)
+        
+        for entity in entities {
+            entity[keyPath: keyPath] = value
+        }
+    }
 }
 
 private extension CoreDataManager {

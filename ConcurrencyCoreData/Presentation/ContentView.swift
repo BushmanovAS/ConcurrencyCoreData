@@ -32,6 +32,12 @@ struct TestView: View {
                         await viewModel.change()
                     }
                 }
+                
+                button("Update Names") {
+                    Task {
+                        await viewModel.updateCountriesNames()
+                    }
+                }
             }
             
             if viewModel.isLoading {

@@ -31,6 +31,14 @@ public protocol ICoreDataManager {
         context: NSManagedObjectContext,
         predicate: NSPredicate?
     ) throws
+    
+    func updateField<Entity: NSManagedObject, Value>(
+        entity: Entity.Type,
+        context: NSManagedObjectContext,
+        predicate: NSPredicate?,
+        keyPath: ReferenceWritableKeyPath<Entity, Value>,
+        value: Value
+    ) throws
 }
 
 public extension ICoreDataManager {

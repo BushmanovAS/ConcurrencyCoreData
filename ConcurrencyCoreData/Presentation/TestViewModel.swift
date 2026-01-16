@@ -21,6 +21,22 @@ final class TestViewModel: ObservableObject {
     }
     
     @MainActor
+    func updateCountriesNames() async {
+        isLoading = true
+        
+        do {
+            try await dataBase.updateCountryName()
+            let countriesFromDB = try await dataBase.getCountries()
+            let sortedCountries = sortCountries(countriesFromDB)
+            self.countries = sortedCountries
+        } catch {
+            print("add 💩")
+        }
+        
+        isLoading = false
+    }
+    
+    @MainActor
     func getCountries() async {
         isLoading = true
         
